@@ -1,0 +1,1162 @@
+basePath: /v1
+definitions:
+  entity.Medicine:
+    properties:
+      id:
+        example: 1789dfb3-e060-433a-9db4-cb93b42768d8
+        type: string
+      name:
+        example: Panadol
+        type: string
+      price:
+        example: 10000
+        type: integer
+      quantity:
+        example: 100
+        type: integer
+    type: object
+  entity.MedicineDetail:
+    properties:
+      description:
+        example: For pain relief
+        type: string
+      id:
+        example: 1789dfb3-e060-433a-9db4-cb93b42768d8
+        type: string
+      medicine_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      quantity:
+        example: 2
+        type: integer
+      signa_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      transaction_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    type: object
+  entity.Patient:
+    properties:
+      age:
+        example: 30
+        type: integer
+      gender:
+        example: male
+        type: string
+      id:
+        example: 1789dfb3-e060-433a-9db4-cb93b42768d8
+        type: string
+      name:
+        example: John Doe
+        type: string
+    type: object
+  entity.Signa:
+    properties:
+      description:
+        example: Before eat
+        type: string
+      id:
+        example: 1789dfb3-e060-433a-9db4-cb93b42768d8
+        type: string
+      signa:
+        example: a.c
+        type: string
+    type: object
+  entity.Transaction:
+    properties:
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      medicine_detail:
+        items:
+          $ref: '#/definitions/entity.MedicineDetail'
+        type: array
+      medicine_type:
+        example: compound
+        type: string
+      patient_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      total_medicines:
+        example: 3
+        type: integer
+      total_price:
+        example: 15000
+        type: integer
+    type: object
+  request.CreateTransaction:
+    properties:
+      descriptions:
+        example:
+        - For pain relief
+        items:
+          type: string
+        type: array
+      medicine_type:
+        enum:
+        - compound
+        - non_compound
+        example: compound
+        type: string
+      medicines:
+        example:
+        - 123e4567-e89b-12d3-a456-426614174000
+        items:
+          type: string
+        type: array
+      patient_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      quantities:
+        example:
+        - 2
+        items:
+          type: integer
+        type: array
+      signas:
+        example:
+        - 123e4567-e89b-12d3-a456-426614174000
+        items:
+          type: string
+        type: array
+    required:
+    - descriptions
+    - medicine_type
+    - medicines
+    - patient_id
+    - quantities
+    - signas
+    type: object
+  request.Medicine:
+    properties:
+      name:
+        example: Panadol
+        type: string
+      price:
+        example: 10000
+        minimum: 0
+        type: integer
+      quantity:
+        example: 100
+        minimum: 0
+        type: integer
+    required:
+    - name
+    - price
+    - quantity
+    type: object
+  request.MedicineDetail:
+    properties:
+      description:
+        example: For pain relief
+        type: string
+      medicine_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      quantity:
+        example: 2
+        minimum: 0
+        type: integer
+      signa_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - quantity
+    type: object
+  request.Patient:
+    properties:
+      age:
+        example: 30
+        maximum: 120
+        minimum: 0
+        type: integer
+      gender:
+        enum:
+        - male
+        - female
+        example: male
+        type: string
+      name:
+        example: John Doe
+        type: string
+    required:
+    - gender
+    - name
+    type: object
+  request.Signa:
+    properties:
+      description:
+        example: Before eat
+        type: string
+      signa:
+        example: a.c
+        type: string
+    required:
+    - description
+    - signa
+    type: object
+  request.UpdateTransaction:
+    properties:
+      medicine_type:
+        enum:
+        - compound
+        - non-compound
+        example: compound
+        type: string
+      total_medicines:
+        example: 3
+        minimum: 0
+        type: integer
+      total_price:
+        example: 15000
+        minimum: 0
+        type: integer
+    required:
+    - medicine_type
+    - total_medicines
+    - total_price
+    type: object
+  response.Error:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
+  response.SuccessMedicine:
+    properties:
+      data:
+        $ref: '#/definitions/entity.Medicine'
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessMedicineDetail:
+    properties:
+      data:
+        $ref: '#/definitions/entity.MedicineDetail'
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessMedicineDetailList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.MedicineDetail'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessMedicineList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.Medicine'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessPatient:
+    properties:
+      data:
+        $ref: '#/definitions/entity.Patient'
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessPatientList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.Patient'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessSigna:
+    properties:
+      data:
+        $ref: '#/definitions/entity.Signa'
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessSignaList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.Signa'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessString:
+    properties:
+      data:
+        example: deleted
+        type: string
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessTransaction:
+    properties:
+      data:
+        $ref: '#/definitions/entity.Transaction'
+      message:
+        example: success
+        type: string
+    type: object
+  response.SuccessTransactionList:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.Transaction'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Example of clean architecture in Go.
+  title: Go E-Presciprion Clean API
+  version: "1.0"
+paths:
+  /medicinedetails:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all medicine detail records
+      operationId: get-all-medicine-details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicineDetailList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all medicine details
+      tags:
+      - medicine-detail
+    post:
+      consumes:
+      - application/json
+      description: Create a new medicine detail
+      operationId: create-medicine-detail
+      parameters:
+      - description: MedicineDetail input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.MedicineDetail'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessMedicineDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Create medicinedetail
+      tags:
+      - medicine-detail
+  /medicinedetails/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a medicine detail by ID
+      operationId: delete-medicine-detail
+      parameters:
+      - description: MedicineDetail ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Delete medicine detail
+      tags:
+      - medicine-detail
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single medicine detail by ID
+      operationId: get-medicine-detail-by-id
+      parameters:
+      - description: MedicineDetail ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicineDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get medicine details by ID
+      tags:
+      - medicine-detail
+    patch:
+      consumes:
+      - application/json
+      description: Update a medicine detail by ID
+      operationId: update-medicine-detail
+      parameters:
+      - description: MedicineDetail ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: MedicineDetail input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.MedicineDetail'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicineDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Update medicinedetail
+      tags:
+      - medicine-detail
+  /medicines:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all medicine records
+      operationId: get-all-medicines
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicineList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all medicines
+      tags:
+      - medicine
+    post:
+      consumes:
+      - application/json
+      description: Create a new medicine
+      operationId: create-medicine
+      parameters:
+      - description: Medicine input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Medicine'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessMedicine'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Create Medicine
+      tags:
+      - medicine
+  /medicines/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a medicine by ID
+      operationId: delete-medicine
+      parameters:
+      - description: Medicine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Delete medicine
+      tags:
+      - medicine
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single medicine by ID
+      operationId: get-by-id-medicine
+      parameters:
+      - description: Medicine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicine'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get medicine by ID
+      tags:
+      - medicine
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing medicine
+      operationId: update-medicine
+      parameters:
+      - description: Medicine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Medicine input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Medicine'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessMedicine'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Update medicine
+      tags:
+      - medicine
+  /patients:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all patient records
+      operationId: get-all-patients
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessPatientList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all patients
+      tags:
+      - patient
+    post:
+      consumes:
+      - application/json
+      description: Create a new patient
+      operationId: create-patient
+      parameters:
+      - description: Patient input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Patient'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessPatient'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Create Patient
+      tags:
+      - patient
+  /patients/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a patient by ID
+      operationId: delete-patient
+      parameters:
+      - description: Patient ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Delete Patient
+      tags:
+      - patient
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single patient by ID
+      operationId: get-patient-by-id
+      parameters:
+      - description: Patient ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessPatient'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get patient by ID
+      tags:
+      - patient
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing patient
+      operationId: update-patient
+      parameters:
+      - description: Patient ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patient input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Patient'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessPatient'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Update Patient
+      tags:
+      - patient
+  /signas:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all signa records
+      operationId: get-all-signa
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessSignaList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all signas
+      tags:
+      - signa
+    post:
+      consumes:
+      - application/json
+      description: Create a new signa
+      operationId: create-signa
+      parameters:
+      - description: Signa input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Signa'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessSigna'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Create signa
+      tags:
+      - signa
+  /signas/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a signa by ID
+      operationId: delete-signa
+      parameters:
+      - description: Signa ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Delete signa
+      tags:
+      - signa
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single signa by ID
+      operationId: get-signa-by-id
+      parameters:
+      - description: Signa ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessSigna'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get signa by ID
+      tags:
+      - signa
+    patch:
+      consumes:
+      - application/json
+      description: Update a signa by ID
+      operationId: update-signa
+      parameters:
+      - description: Signa ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Signa input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.Signa'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessSigna'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Update signa
+      tags:
+      - signa
+  /transactions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all transaction records
+      operationId: get-all-transaction
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessTransactionList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all transactions
+      tags:
+      - transaction
+    post:
+      consumes:
+      - application/json
+      description: Create a new transaction with medicine details
+      operationId: create-transaction-with-med-detail
+      parameters:
+      - description: Transaction input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateTransaction'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessTransaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Create transaction with medicine details
+      tags:
+      - transaction
+  /transactions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a transaction by ID
+      operationId: delete-transaction
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Delete transaction
+      tags:
+      - transaction
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single transaction by ID
+      operationId: get-transaction-by-id
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessTransaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get transaction by ID
+      tags:
+      - transaction
+    patch:
+      consumes:
+      - application/json
+      description: Update a transaction by ID
+      operationId: update-transaction
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateTransaction'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessTransaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Update transaction
+      tags:
+      - transaction
+  /transactions/patients/{patient_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all transactions for a specific patient
+      operationId: get-all-transactions-by-patient-id
+      parameters:
+      - description: Patient ID
+        in: path
+        name: patient_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessTransactionList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Get all transactions by patient ID
+      tags:
+      - transaction
+swagger: "2.0"
