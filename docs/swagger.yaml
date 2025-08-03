@@ -78,6 +78,15 @@ definitions:
       patient_id:
         example: 123e4567-e89b-12d3-a456-426614174000
         type: string
+      payment_redirect_url:
+        example: https://example.com/redirect
+        type: string
+      payment_token:
+        example: https://example.com/token
+        type: string
+      status:
+        example: pending
+        type: string
       total_medicines:
         example: 3
         type: integer
@@ -322,14 +331,14 @@ definitions:
         example: success
         type: string
     type: object
-host: localhost:8080
+host: http://localhost:8080
 info:
   contact: {}
   description: Example of clean architecture in Go.
   title: Go E-Presciprion Clean API
   version: "1.0"
 paths:
-  /medicinedetails:
+  /medicine-details:
     get:
       consumes:
       - application/json
@@ -380,10 +389,10 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Error'
-      summary: Create medicinedetail
+      summary: Create medicine detail
       tags:
       - medicine-detail
-  /medicinedetails/{id}:
+  /medicine-details/{id}:
     delete:
       consumes:
       - application/json
@@ -1127,6 +1136,37 @@ paths:
           schema:
             $ref: '#/definitions/response.Error'
       summary: Update transaction
+      tags:
+      - transaction
+  /transactions/midtrans-callbacks:
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes callback notifications from Midtrans
+      operationId: handle-midtrans-callback
+      parameters:
+      - description: Midtrans Notification Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Handle Midtrans callback notification
       tags:
       - transaction
   /transactions/patients/{patient_id}:

@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -220,3 +222,49 @@ func (r *V1) deleteTransaction(ctx *fiber.Ctx) error {
 
 	return successResponse(ctx, http.StatusOK, "transaction deleted successfully", "deleted")
 }
+
+// @Summary     Handle Midtrans callback notification
+// @Description Receives and processes callback notifications from Midtrans
+// @ID          handle-midtrans-callback
+// @Tags        transaction
+// @Accept      json
+// @Produce     json
+// @Param       payload body object true "Midtrans Notification Payload"
+// @Success     200 {object} response.SuccessString
+// @Failure     400 {object} response.Error
+// @Failure     500 {object} response.Error
+// @Router      /transactions/midtrans-callbacks [post]
+func (r *V1) handleMidtransCallback(ctx *fiber.Ctx) error {
+	body := ctx.Body()
+	r.l.Info(fmt.Sprintf("Midtrans callback payload: %s", string(body)))
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		r.l.Error(fmt.Sprintf("Failed to unmarshal Midtrans callback: %v", err))
+		return errorResponse(ctx, http.StatusBadRequest, "invalid midtrans payload")
+	}
+
+	//print transaction ID, status, and fraud status
+	// r.l.Info(fmt.Sprintf("Midtrans callback transaction ID: %s", payload["transaction_id"]))
+	// r.l.Info(fmt.Sprintf("Midtrans callback order ID: %s", payload["order_id"]))
+	// r.l.Info(fmt.Sprintf("Midtrans callback transaction status: %s", payload["transaction_status"]))
+	// r.l.Info(fmt.Sprintf("Midtrans callback fraud status: %s", payload["fraud_status"]))	
+
+	transactionID, ok1 := payload["order_id"].(string)
+	transactionStatus, ok2 := payload["transaction_status"].(string)
+	fraudStatus, ok3 := payload["fraud_status"].(string)
+
+	if !ok1 || !ok2 || !ok3 {
+		r.l.Error("Missing required fields in midtrans callback")
+		return errorResponse(ctx, http.StatusBadRequest, "missing fields in midtrans payload")
+	}
+
+	err := r.u.Transaction.HandleMidtransNotification(ctx.UserContext(), transactionID, transactionStatus, fraudStatus)
+	if err != nil {
+		r.l.Error(fmt.Sprintf("Failed to handle midtrans notification: %v", err))
+		return errorResponse(ctx, http.StatusInternalServerError, "failed to process midtrans callback")
+	}
+
+	return ctx.SendStatus(http.StatusOK) // Respond with 200 OK to acknowledge receipt
+}
+

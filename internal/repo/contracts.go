@@ -45,6 +45,7 @@ type (
 		GetByID(context.Context, string) (*entity.Transaction, error)
 		Update(context.Context, string, entity.Transaction) (*entity.Transaction, error)
 		Delete(context.Context, string) error
+		UpdateStatusByTransactionID(context.Context, string, string) error
 	}
 
 	// MedicineDetailRepo -.

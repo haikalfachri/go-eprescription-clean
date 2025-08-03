@@ -15,10 +15,9 @@ type (
 		HTTP    HTTP
 		Log     Log
 		PG      PG
-		// GRPC    GRPC
-		// RMQ     RMQ
 		Metrics Metrics
 		Swagger Swagger
+		Midtrans Midtrans
 	}
 
 	// App -.
@@ -44,18 +43,6 @@ type (
 		URL     string `env:"PG_URL,required"`
 	}
 
-	// GRPC -.
-	// GRPC struct {
-	// 	Port string `env:"GRPC_PORT,required"`
-	// }
-
-	// RMQ -.
-	// RMQ struct {
-	// 	ServerExchange string `env:"RMQ_RPC_SERVER,required"`
-	// 	ClientExchange string `env:"RMQ_RPC_CLIENT,required"`
-	// 	URL            string `env:"RMQ_URL,required"`
-	// }
-
 	// Metrics -.
 	Metrics struct {
 		Enabled bool `env:"METRICS_ENABLED" envDefault:"true"`
@@ -64,6 +51,12 @@ type (
 	// Swagger -.
 	Swagger struct {
 		Enabled bool `env:"SWAGGER_ENABLED" envDefault:"false"`
+	}
+
+	// Midtrans -.
+	Midtrans struct {
+		ServerKey string `env:"MIDTRANS_SERVER_KEY,required"`
+		ClientKey string `env:"MIDTRANS_CLIENT_KEY,required"`
 	}
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// @Summary     Create medicinedetail
+// @Summary     Create medicine detail
 // @Description Create a new medicine detail
 // @ID          create-medicine-detail
 // @Tags        medicine-detail
@@ -20,7 +20,7 @@ import (
 // @Success 	201 {object} response.SuccessMedicineDetail
 // @Failure     400 {object} response.Error
 // @Failure     500 {object} response.Error
-// @Router      /medicinedetails [post]
+// @Router      /medicine-details [post]
 func (r *V1) createMedicineDetail(ctx *fiber.Ctx) error {
 	var req request.MedicineDetail
 
@@ -60,7 +60,7 @@ func (r *V1) createMedicineDetail(ctx *fiber.Ctx) error {
 // @Success 	200 {object} response.SuccessMedicineDetailList
 // @Failure     404 {object} response.Error
 // @Failure     500 {object} response.Error
-// @Router      /medicinedetails [get]
+// @Router      /medicine-details [get]
 func (r *V1) getAllMedicineDetail(ctx *fiber.Ctx) error {
 	medicineDetails, err := r.u.MedicineDetail.GetAll(ctx.UserContext())
 	if err != nil {
@@ -85,7 +85,7 @@ func (r *V1) getAllMedicineDetail(ctx *fiber.Ctx) error {
 // @Failure     400 {object} response.Error
 // @Failure     404 {object} response.Error
 // @Failure     500 {object} response.Error
-// @Router      /medicinedetails/{id} [get]
+// @Router      /medicine-details/{id} [get]
 func (r *V1) getByIDMedicineDetail(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	if id == "" {
@@ -119,7 +119,7 @@ func (r *V1) getByIDMedicineDetail(ctx *fiber.Ctx) error {
 // @Failure     400 {object} response.Error
 // @Failure     404 {object} response.Error
 // @Failure     500 {object} response.Error
-// @Router      /medicinedetails/{id} [patch]
+// @Router      /medicine-details/{id} [patch]
 func (r *V1) updateMedicineDetail(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	if id == "" {
@@ -175,7 +175,7 @@ func (r *V1) updateMedicineDetail(ctx *fiber.Ctx) error {
 // @Failure     400 {object} response.Error
 // @Failure     404 {object} response.Error
 // @Failure     500 {object} response.Error
-// @Router      /medicinedetails/{id} [delete]
+// @Router      /medicine-details/{id} [delete]
 func (r *V1) deleteMedicineDetail(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 

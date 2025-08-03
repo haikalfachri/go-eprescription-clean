@@ -7,6 +7,7 @@ import (
 
 	"go-eprescription-clean/internal/entity"
 	"go-eprescription-clean/internal/repo"
+	"go-eprescription-clean/pkg/midtrans"
 )
 
 // UseCase - Transaction use case struct.
@@ -14,14 +15,20 @@ type UseCase struct {
 	repo               repo.TransactionRepo
 	medicineDetailRepo repo.MedicineDetailRepo
 	medicineRepo       repo.MedicineRepo
+	patientRepo        repo.PatientRepo
+	signaRepo          repo.SignaRepo
+	midtransClient     *midtrans.SnapClient
 }
 
 // New - creates a new Transaction use case.
-func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.MedicineRepo) *UseCase {
+func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.MedicineRepo, pRepo repo.PatientRepo, sRepo repo.SignaRepo, mtClient *midtrans.SnapClient) *UseCase {
 	return &UseCase{
 		repo:               r,
 		medicineDetailRepo: mdRepo,
 		medicineRepo:       mRepo,
+		patientRepo:        pRepo,
+		signaRepo:          sRepo,
+		midtransClient:     mtClient,
 	}
 }
 
@@ -35,46 +42,88 @@ func (uc *UseCase) CreateWithMedicineDetail(
 	quantities []int64,
 ) (*entity.Transaction, error) {
 	if len(medicines) != len(signas) || len(signas) != len(descriptions) || len(quantities) != len(medicines) {
-		return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.CreateWithMedicineDetail: the length of medicines, signas, quantities, and descriptions  must be equal")
-	}
-	// 1. Create the transaction
-	transaction, err := uc.repo.Create(ctx, t)
-	if err != nil {
-		return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.CreateWithMedicineDetail: failed to create transaction: %w", err)
+		return nil, fmt.Errorf("all input arrays must have the same length")
 	}
 
-	// 2. Insert medicine details with transaction ID
+	// 1. Validate patient
+	patient, err := uc.patientRepo.GetByID(ctx, t.PatientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find patient: %w", err)
+	}
+
+	// 2. Validate all medicines and signas first
+	var medicineDetails []entity.MedicineDetail
+	totalPrice := int64(0)
+
 	for idx := range medicines {
-		var medicineDetail entity.MedicineDetail
-		medicineDetail.TransactionID = transaction.ID
-		medicineDetail.MedicineID = medicines[idx]
-		medicineDetail.SignaID = signas[idx]
-		medicineDetail.Description = descriptions[idx]
-		medicineDetail.Quantity = quantities[idx]
 		medicine, err := uc.medicineRepo.GetByID(ctx, medicines[idx])
 		if err != nil {
-			return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.GetByID: failed to get medicine by ID: %w", err)
+			return nil, fmt.Errorf("medicine ID %s not found: %w", medicines[idx], err)
 		}
-		transaction.TotalPrice += quantities[idx] * medicine.Price
-		medicine.Quantity -= quantities[idx]
-		if _, err := uc.medicineRepo.Update(ctx, medicines[idx], *medicine); err != nil {
-			return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.Update: failed to update medicine quantity: %w", err)
+
+		if medicine.Quantity < quantities[idx] {
+			return nil, fmt.Errorf("insufficient stock for medicine ID %s", medicines[idx])
 		}
-		if _, err := uc.medicineDetailRepo.Create(ctx, medicineDetail); err != nil {
-			return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.CreateWithMedicineDetail: failed to create medicine detail: %w", err)
+
+		_, err = uc.signaRepo.GetByID(ctx, signas[idx])
+		if err != nil {
+			return nil, fmt.Errorf("signa ID %s not found: %w", signas[idx], err)
+		}
+
+		// prepare medicine detail
+		md := entity.MedicineDetail{
+			MedicineID:  medicines[idx],
+			SignaID:     signas[idx],
+			Description: descriptions[idx],
+			Quantity:    quantities[idx],
+		}
+		medicineDetails = append(medicineDetails, md)
+		totalPrice += quantities[idx] * medicine.Price
+	}
+
+	// 3. Create transaction (safe to create now)
+	t.TotalPrice = totalPrice
+	t.TotalMedicines = int64(len(medicines))
+	transaction, err := uc.repo.Create(ctx, t)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	// 4. Create medicine details and update stock
+	for _, detail := range medicineDetails {
+		detail.TransactionID = transaction.ID
+
+		medicine, _ := uc.medicineRepo.GetByID(ctx, detail.MedicineID)
+		medicine.Quantity -= detail.Quantity
+
+		if _, err := uc.medicineRepo.Update(ctx, detail.MedicineID, *medicine); err != nil {
+			return nil, fmt.Errorf("failed to update medicine quantity: %w", err)
+		}
+
+		if _, err := uc.medicineDetailRepo.Create(ctx, detail); err != nil {
+			return nil, fmt.Errorf("failed to create medicine detail: %w", err)
 		}
 	}
 
-	transaction.TotalMedicines = int64(len(medicines))
+	// 5. Create snap transaction
+	snapResp, _ := uc.midtransClient.CreateSnapTransaction(transaction.ID, totalPrice, patient.Name)
+	if snapResp == nil {
+		return nil, fmt.Errorf("failed to create snap transaction")
+	}
 
+	transaction.PaymentToken = snapResp.Token
+	transaction.PaymentRedirectURL = snapResp.RedirectURL
+
+	// 6. Save payment token
 	transaction, err = uc.repo.Update(ctx, transaction.ID, *transaction)
 	if err != nil {
-		return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - repo.Update: failed to update transaction: %w", err)
+		return nil, fmt.Errorf("failed to update transaction with snap info: %w", err)
 	}
 
+	// 7. Fetch details and return
 	details, err := uc.medicineDetailRepo.GetByTransactionID(ctx, transaction.ID)
 	if err != nil {
-		return nil, fmt.Errorf("TransactionUseCase - CreateWithMedicineDetail - GetByTransactionID: %w", err)
+		return nil, fmt.Errorf("failed to get medicine details: %w", err)
 	}
 	transaction.MedicineDetail = details
 
@@ -130,7 +179,7 @@ func (uc *UseCase) GetByID(ctx context.Context, id string) (*entity.Transaction,
 		return nil, fmt.Errorf("TransactionUseCase - GetByID - GetByTransactionID: %w", err)
 	}
 	transaction.MedicineDetail = details
-	
+
 	return transaction, nil
 }
 
@@ -149,7 +198,7 @@ func (uc *UseCase) Update(ctx context.Context, id string, t entity.Transaction) 
 		return nil, fmt.Errorf("TransactionUseCase - Update - GetByTransactionID: %w", err)
 	}
 	updatedTransaction.MedicineDetail = details
-	
+
 	return updatedTransaction, nil
 }
 
@@ -175,4 +224,27 @@ func (uc *UseCase) attachMedicineDetails(ctx context.Context, transactions []ent
 		transactions[idx].MedicineDetail = details
 	}
 	return transactions, nil
+}
+
+// HandleMidtransNotification - handles Midtrans notification callback.
+func (uc *UseCase) HandleMidtransNotification(ctx context.Context, transactionID, transactionStatus, fraudStatus string) error {
+	// You can map status to your internal status system
+	var internalStatus string
+	switch transactionStatus {
+	case "capture":
+		if fraudStatus == "challenge" {
+			internalStatus = "pending"
+		} else if fraudStatus == "accept" {
+			internalStatus = "paid"
+		}
+	case "settlement":
+		internalStatus = "paid"
+	case "deny", "cancel", "expire":
+		internalStatus = "failed"
+	case "pending":
+		internalStatus = "pending"
+	}
+
+	// Update the transaction status in your database
+	return uc.repo.UpdateStatusByTransactionID(ctx, transactionID, internalStatus)
 }

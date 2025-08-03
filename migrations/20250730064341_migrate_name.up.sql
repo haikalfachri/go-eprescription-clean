@@ -1,11 +1,3 @@
--- CREATE TABLE IF NOT EXISTS history(
---     id serial PRIMARY KEY,
---     source VARCHAR(255),
---     destination VARCHAR(255),
---     original VARCHAR(255),
---     translation VARCHAR(255)
--- );
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Patients table
@@ -44,6 +36,14 @@ CREATE TABLE Transactions (
     medicine_type TEXT CHECK (medicine_type IN ('compound', 'non_compound')),
     total_price INT,
     total_medicines INT,
+    status TEXT DEFAULT 'pending' CHECK (status IN (
+        'pending', 
+        'paid', 
+        'cancelled', 
+        'challenge'
+    )),
+    payment_token TEXT,
+    payment_redirect_url TEXT,       
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

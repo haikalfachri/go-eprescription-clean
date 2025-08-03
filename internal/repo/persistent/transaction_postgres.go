@@ -23,16 +23,16 @@ func NewTransactionRepo(pg *postgres.Postgres) *TransactionRepo {
 func (r *TransactionRepo) Create(ctx context.Context, t entity.Transaction) (*entity.Transaction, error) {
 	sql, args, err := r.Builder.
 		Insert("transactions").
-		Columns("patient_id", "medicine_type", "total_price", "total_medicines").
-		Values(t.PatientID, t.MedicineType, t.TotalPrice, t.TotalMedicines).
-		Suffix("RETURNING id, patient_id, medicine_type, total_price, total_medicines").
+		Columns("patient_id", "medicine_type", "status", "total_price", "total_medicines", "payment_token", "payment_redirect_url").
+		Values(t.PatientID, t.MedicineType, "pending", t.TotalPrice, t.TotalMedicines, t.PaymentToken, t.PaymentRedirectURL).
+		Suffix("RETURNING id, patient_id, medicine_type, status, total_price, total_medicines, payment_token, payment_redirect_url").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("TransactionRepo - Create - Builder: %w", err)
 	}
 
 	var transaction entity.Transaction
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.TotalPrice, &transaction.TotalMedicines)
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.Status, &transaction.TotalPrice, &transaction.TotalMedicines, &transaction.PaymentToken, &transaction.PaymentRedirectURL)
 	if err != nil {
 		return nil, fmt.Errorf("TransactionRepo - Create - QueryRow: %w", err)
 	}
@@ -43,7 +43,7 @@ func (r *TransactionRepo) Create(ctx context.Context, t entity.Transaction) (*en
 // GetAll - retrieves all transaction records.
 func (r *TransactionRepo) GetAll(ctx context.Context) ([]entity.Transaction, error) {
 	sql, _, err := r.Builder.
-		Select("id", "patient_id", "medicine_type", "total_price", "total_medicines").
+		Select("id", "patient_id", "medicine_type", "status", "total_price", "total_medicines").
 		From("transactions").
 		ToSql()
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *TransactionRepo) GetAll(ctx context.Context) ([]entity.Transaction, err
 	var transactions []entity.Transaction
 	for rows.Next() {
 		var transaction entity.Transaction
-		if err := rows.Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.TotalPrice, &transaction.TotalMedicines); err != nil {
+		if err := rows.Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.Status, &transaction.TotalPrice, &transaction.TotalMedicines); err != nil {
 			return nil, fmt.Errorf("TransactionRepo - GetAll - Scan: %w", err)
 		}
 		transactions = append(transactions, transaction)
@@ -75,7 +75,7 @@ func (r *TransactionRepo) GetAll(ctx context.Context) ([]entity.Transaction, err
 // GetAllByPatientID - retrieves all transactions by patient ID.
 func (r *TransactionRepo) GetAllByPatientID(ctx context.Context, patientID string) ([]entity.Transaction, error) {
 	sql, args, err := r.Builder.
-		Select("id", "patient_id", "medicine_type", "total_price", "total_medicines").
+		Select("id", "patient_id", "medicine_type", "status", "total_price", "total_medicines", "payment_token", "payment_redirect_url").
 		From("transactions").
 		Where("patient_id = ?", patientID).
 		ToSql()
@@ -92,7 +92,7 @@ func (r *TransactionRepo) GetAllByPatientID(ctx context.Context, patientID strin
 	var transactions []entity.Transaction
 	for rows.Next() {
 		var transaction entity.Transaction
-		if err := rows.Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.TotalPrice, &transaction.TotalMedicines); err != nil {
+		if err := rows.Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.Status, &transaction.TotalPrice, &transaction.TotalMedicines, &transaction.PaymentToken, &transaction.PaymentRedirectURL); err != nil {
 			return nil, fmt.Errorf("TransactionRepo - GetAllByPatientID - Scan: %w", err)
 		}
 		transactions = append(transactions, transaction)
@@ -108,7 +108,7 @@ func (r *TransactionRepo) GetAllByPatientID(ctx context.Context, patientID strin
 // GetByID - retrieves a transaction by its ID.
 func (r *TransactionRepo) GetByID(ctx context.Context, id string) (*entity.Transaction, error) {
 	sql, args, err := r.Builder.
-		Select("id", "patient_id", "medicine_type", "total_price", "total_medicines").
+		Select("id", "patient_id", "medicine_type", "status", "total_price", "total_medicines", "payment_token", "payment_redirect_url").
 		From("transactions").
 		Where("id = ?", id).
 		ToSql()
@@ -117,7 +117,7 @@ func (r *TransactionRepo) GetByID(ctx context.Context, id string) (*entity.Trans
 	}
 
 	var transaction entity.Transaction
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.TotalPrice, &transaction.TotalMedicines)
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.Status, &transaction.TotalPrice, &transaction.TotalMedicines, &transaction.PaymentToken, &transaction.PaymentRedirectURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("TransactionRepo - GetByID - no transaction found with ID %s", id)
@@ -144,6 +144,15 @@ func (r *TransactionRepo) Update(ctx context.Context, id string, t entity.Transa
 	if t.TotalMedicines != 0 {
 		updates["total_medicines"] = t.TotalMedicines
 	}
+	if t.Status != "" {
+		updates["status"] = t.Status
+	}
+	if t.PaymentToken != "" {
+		updates["payment_token"] = t.PaymentToken
+	}
+	if t.PaymentRedirectURL != "" {
+		updates["payment_redirect_url"] = t.PaymentRedirectURL
+	}
 
 	// If no fields to update
 	if len(updates) == 0 {
@@ -154,14 +163,14 @@ func (r *TransactionRepo) Update(ctx context.Context, id string, t entity.Transa
 		Update("transactions").
 		SetMap(updates).
 		Where("id = ?", id).
-		Suffix("RETURNING id, patient_id, medicine_type, total_price, total_medicines").
+		Suffix("RETURNING id, patient_id, medicine_type, status, total_price, total_medicines, payment_token, payment_redirect_url").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("TransactionRepo - Update - Builder: %w", err)
 	}
 
 	var transaction entity.Transaction
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.TotalPrice, &transaction.TotalMedicines)
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&transaction.ID, &transaction.PatientID, &transaction.MedicineType, &transaction.Status, &transaction.TotalPrice, &transaction.TotalMedicines , &transaction.PaymentToken, &transaction.PaymentRedirectURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("TransactionRepo - Update - no transaction found with ID %s", id)
@@ -189,6 +198,29 @@ func (r *TransactionRepo) Delete(ctx context.Context, id string) error {
 
 	if result.RowsAffected() == 0 {
 		return fmt.Errorf("TransactionRepo - Delete - no transaction found with ID %s", id)
+	}
+
+	return nil
+}
+
+// UpdateStatusByTransactionID updates the status of a transaction based on its ID (used as TransactionID in Midtrans)
+func (r *TransactionRepo) UpdateStatusByTransactionID(ctx context.Context, transactionID, status string) error {
+	sql, args, err := r.Builder.
+		Update("transactions").
+		Set("status", status).
+		Where("id = ?", transactionID). // TransactionID maps to your transaction.ID
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("TransactionRepo - UpdateStatusByTransactionID - Builder: %w", err)
+	}
+
+	result, err := r.Pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("TransactionRepo - UpdateStatusByTransactionID - Exec: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("TransactionRepo - UpdateStatusByTransactionID - no rows affected for ID %s", transactionID)
 	}
 
 	return nil

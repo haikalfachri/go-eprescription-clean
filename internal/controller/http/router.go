@@ -19,7 +19,7 @@ import (
 // @title       Go E-Presciprion Clean API
 // @description Example of clean architecture in Go.
 // @version     1.0
-// @host        localhost:8080
+// @host        http://localhost:8080
 // @BasePath    /v1
 func NewRouter(app *fiber.App, cfg *config.Config, u v1.Usecases, l logger.Interface) {
 	// Options
@@ -48,7 +48,7 @@ func NewRouter(app *fiber.App, cfg *config.Config, u v1.Usecases, l logger.Inter
 		v1.NewSignaRoutes(apiV1Group, u.Signa, l)
 		v1.NewPatientRoutes(apiV1Group, u.Patient, l)
 		v1.NewMedicineRoutes(apiV1Group, u.Medicine, l)
-		v1.NewTransactionRoutes(apiV1Group, u.Transaction, u.MedicineDetail, u.Medicine, l)
+		v1.NewTransactionRoutes(apiV1Group, u.Transaction, u.MedicineDetail, u.Medicine, u.Patient, u.Midtrans, l)
 		v1.NewMedicineDetailRoutes(apiV1Group, u.MedicineDetail, l)
 		// Add other routes here
 	}

@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/medicinedetails": {
+        "/medicine-details": {
             "get": {
                 "description": "Retrieve all medicine detail records",
                 "consumes": [
@@ -61,7 +61,7 @@ const docTemplate = `{
                 "tags": [
                     "medicine-detail"
                 ],
-                "summary": "Create medicinedetail",
+                "summary": "Create medicine detail",
                 "operationId": "create-medicine-detail",
                 "parameters": [
                     {
@@ -96,7 +96,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/medicinedetails/{id}": {
+        "/medicine-details/{id}": {
             "get": {
                 "description": "Retrieve a single medicine detail by ID",
                 "consumes": [
@@ -1052,6 +1052,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/transactions/midtrans-callbacks": {
+            "post": {
+                "description": "Receives and processes callback notifications from Midtrans",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transaction"
+                ],
+                "summary": "Handle Midtrans callback notification",
+                "operationId": "handle-midtrans-callback",
+                "parameters": [
+                    {
+                        "description": "Midtrans Notification Payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessString"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions/patients/{patient_id}": {
             "get": {
                 "description": "Retrieve all transactions for a specific patient",
@@ -1365,6 +1412,18 @@ const docTemplate = `{
                 "patient_id": {
                     "type": "string",
                     "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "payment_redirect_url": {
+                    "type": "string",
+                    "example": "https://example.com/redirect"
+                },
+                "payment_token": {
+                    "type": "string",
+                    "example": "https://example.com/token"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
                 },
                 "total_medicines": {
                     "type": "integer",
@@ -1721,7 +1780,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "http://localhost:8080",
 	BasePath:         "/v1",
 	Schemes:          []string{},
 	Title:            "Go E-Presciprion Clean API",

@@ -3,6 +3,7 @@ package v1
 import (
 	"go-eprescription-clean/internal/usecase"
 	"go-eprescription-clean/pkg/logger"
+	"go-eprescription-clean/pkg/midtrans"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
@@ -68,12 +69,14 @@ func NewMedicineRoutes(apiV1Group fiber.Router, m usecase.Medicine, l logger.Int
 }
 
 // NewTransactionRoutes -.
-func NewTransactionRoutes(apiV1Group fiber.Router, t usecase.Transaction, md usecase.MedicineDetail, m usecase.Medicine, l logger.Interface) {
+func NewTransactionRoutes(apiV1Group fiber.Router, t usecase.Transaction, md usecase.MedicineDetail, m usecase.Medicine, p usecase.Patient, mtClient *midtrans.SnapClient, l logger.Interface) {
 	r := &V1{
 		u: Usecases{
 			Transaction:   t,
 			MedicineDetail: md,
 			Medicine: m,
+			Patient: p,
+			Midtrans: mtClient,
 		},
 		l: l,
 		v: validator.New(),
@@ -87,6 +90,7 @@ func NewTransactionRoutes(apiV1Group fiber.Router, t usecase.Transaction, md use
 		transactionGroup.Post("/", r.createTransactionWithMedDetail)
 		transactionGroup.Patch("/:id", r.updateTransaction)
 		transactionGroup.Delete("/:id", r.deleteTransaction)
+		transactionGroup.Post("/callbacks", r.handleMidtransCallback)
 	}
 }
 
@@ -101,7 +105,7 @@ func NewMedicineDetailRoutes(apiV1Group fiber.Router, md usecase.MedicineDetail,
 		v: validator.New(),
 	}
 
-	medicineDetailGroup := apiV1Group.Group("/medicinedetails")
+	medicineDetailGroup := apiV1Group.Group("/medicine-details")
 	{
 		medicineDetailGroup.Get("/", r.getAllMedicineDetail)
 		medicineDetailGroup.Get("/:id", r.getByIDMedicineDetail)
