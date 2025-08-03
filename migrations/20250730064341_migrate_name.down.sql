@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS Patients, MasterSignas, MasterMedicines, Transactions, MedicineDetails;

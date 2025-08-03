@@ -250,20 +250,20 @@ func (r *V1) handleMidtransCallback(ctx *fiber.Ctx) error {
 	// r.l.Info(fmt.Sprintf("Midtrans callback transaction status: %s", payload["transaction_status"]))
 	// r.l.Info(fmt.Sprintf("Midtrans callback fraud status: %s", payload["fraud_status"]))	
 
-	transactionID, ok1 := payload["order_id"].(string)
-	transactionStatus, ok2 := payload["transaction_status"].(string)
-	fraudStatus, ok3 := payload["fraud_status"].(string)
+	// transactionID, ok1 := payload["order_id"].(string)
+	// transactionStatus, ok2 := payload["transaction_status"].(string)
+	// fraudStatus, ok3 := payload["fraud_status"].(string)
 
-	if !ok1 || !ok2 || !ok3 {
-		r.l.Error("Missing required fields in midtrans callback")
-		return errorResponse(ctx, http.StatusBadRequest, "missing fields in midtrans payload")
-	}
+	// if !ok1 || !ok2 || !ok3 {
+	// 	r.l.Error("Missing required fields in midtrans callback")
+	// 	return errorResponse(ctx, http.StatusBadRequest, "missing fields in midtrans payload")
+	// }
 
-	err := r.u.Transaction.HandleMidtransNotification(ctx.UserContext(), transactionID, transactionStatus, fraudStatus)
-	if err != nil {
-		r.l.Error(fmt.Sprintf("Failed to handle midtrans notification: %v", err))
-		return errorResponse(ctx, http.StatusInternalServerError, "failed to process midtrans callback")
-	}
+	// err := r.u.Transaction.HandleMidtransNotification(ctx.UserContext(), transactionID, transactionStatus, fraudStatus)
+	// if err != nil {
+	// 	r.l.Error(fmt.Sprintf("Failed to handle midtrans notification: %v", err))
+	// 	return errorResponse(ctx, http.StatusInternalServerError, "failed to process midtrans callback")
+	// }
 
 	return ctx.SendStatus(http.StatusOK) // Respond with 200 OK to acknowledge receipt
 }
