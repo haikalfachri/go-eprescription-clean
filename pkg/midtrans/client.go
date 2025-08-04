@@ -22,7 +22,7 @@ func New() *SnapClient {
 	return &SnapClient{Client: client}
 }
 
-func (c *SnapClient) CreateSnapTransaction(transactionID string, amount int64, customerName string) (*snap.Response, *midtrans.Error) {
+func (c *SnapClient) CreateSnap(transactionID string, amount int64, customerName string) (redirectURL, token string, err *midtrans.Error) {
 	req := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  transactionID,
@@ -38,8 +38,10 @@ func (c *SnapClient) CreateSnapTransaction(transactionID string, amount int64, c
 	if midErr != nil {
 		// Log the midtrans error but still return the response if it's usable
 		// You can inspect midErr.StatusCode, midErr.Message, etc.
-		return resp, midErr
+		return "", "", midErr
 	}
 
-	return resp, nil
+	return resp.RedirectURL, resp.Token, nil
 }
+
+

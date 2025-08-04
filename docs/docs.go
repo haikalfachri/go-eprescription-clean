@@ -1052,7 +1052,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions/midtrans-callbacks": {
+        "/transactions/midtrans/callbacks": {
             "post": {
                 "description": "Receives and processes callback notifications from Midtrans",
                 "consumes": [
@@ -1131,6 +1131,53 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/transactions/xendit/callbacks": {
+            "post": {
+                "description": "Receives and processes callback notifications from Xendit",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transaction"
+                ],
+                "summary": "Handle Xendit callback notification",
+                "operationId": "handle-xendit-callback",
+                "parameters": [
+                    {
+                        "description": "Xendit Notification Payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessString"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.Error"
                         }

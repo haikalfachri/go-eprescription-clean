@@ -39,10 +39,12 @@ CREATE TABLE Transactions (
     status TEXT DEFAULT 'pending' CHECK (status IN (
         'pending', 
         'paid', 
-        'cancelled', 
+        'failed',
+        'cancelled',
+        'expired',
         'challenge'
     )),
-    payment_token TEXT,
+    payment_provider TEXT DEFAULT 'other' CHECK (payment_provider IN ('midtrans', 'xendit', 'other')),
     payment_redirect_url TEXT,       
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

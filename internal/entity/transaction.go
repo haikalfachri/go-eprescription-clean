@@ -12,5 +12,5 @@ type Transaction struct {
 	Status             string           `json:"status" example:"pending"`
 	MedicineDetail     []MedicineDetail `json:"medicine_detail,omitempty"`
 	PaymentRedirectURL string           `json:"payment_redirect_url,omitempty" example:"https://example.com/redirect"`
-	PaymentToken       string           `json:"payment_token,omitempty" example:"https://example.com/token"`
+	PaymentProvider    string           `json:"payment_provider,omitempty" example:"https://example.com/provider"`
 }

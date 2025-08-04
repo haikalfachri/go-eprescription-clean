@@ -10,17 +10,19 @@ import (
 	"go-eprescription-clean/config"
 	"go-eprescription-clean/internal/controller/http"
 	v1 "go-eprescription-clean/internal/controller/http/v1"
+	"go-eprescription-clean/internal/repo/payment_gateway"
 	"go-eprescription-clean/internal/repo/persistent"
 	"go-eprescription-clean/internal/usecase/medicine"
+	"go-eprescription-clean/internal/usecase/medicine_detail"
 	"go-eprescription-clean/internal/usecase/patient"
 	"go-eprescription-clean/internal/usecase/signa"
 	"go-eprescription-clean/internal/usecase/transaction"
-	"go-eprescription-clean/internal/usecase/medicine_detail"
 
 	"go-eprescription-clean/pkg/httpserver"
 	"go-eprescription-clean/pkg/logger"
-	"go-eprescription-clean/pkg/postgres"
 	"go-eprescription-clean/pkg/midtrans"
+	"go-eprescription-clean/pkg/xendit"
+	"go-eprescription-clean/pkg/postgres"
 )
 
 // Run creates objects via constructors.
@@ -37,6 +39,9 @@ func Run(cfg *config.Config) {
 	// Midtrans
 	mtClient := midtrans.New()
 
+	// Xendit
+	xenditClient := xendit.New()
+	
 	// Use-Case
 	signaUseCase := signa.New(persistent.NewSignaRepo(pg))
 	patientUseCase := patient.New(persistent.NewPatientRepo(pg))
@@ -47,7 +52,8 @@ func Run(cfg *config.Config) {
 		persistent.NewMedicineRepo(pg),
 		persistent.NewPatientRepo(pg),
 		persistent.NewSignaRepo(pg),
-		mtClient,
+		payment_gateway.NewMidtransRepo(mtClient),
+		payment_gateway.NewXenditRepo(xenditClient),
 	)
 	medicineDetailUseCase := medicine_detail.New(persistent.NewMedicineDetailsRepo(pg))
 

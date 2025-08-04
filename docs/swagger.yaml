@@ -1138,7 +1138,7 @@ paths:
       summary: Update transaction
       tags:
       - transaction
-  /transactions/midtrans-callbacks:
+  /transactions/midtrans/callbacks:
     post:
       consumes:
       - application/json
@@ -1197,6 +1197,37 @@ paths:
           schema:
             $ref: '#/definitions/response.Error'
       summary: Get all transactions by patient ID
+      tags:
+      - transaction
+  /transactions/xendit/callbacks:
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes callback notifications from Xendit
+      operationId: handle-xendit-callback
+      parameters:
+      - description: Xendit Notification Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessString'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Handle Xendit callback notification
       tags:
       - transaction
 swagger: "2.0"

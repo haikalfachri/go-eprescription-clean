@@ -7,7 +7,6 @@ import (
 
 	"go-eprescription-clean/internal/entity"
 	"go-eprescription-clean/internal/repo"
-	"go-eprescription-clean/pkg/midtrans"
 )
 
 // UseCase - Transaction use case struct.
@@ -17,18 +16,20 @@ type UseCase struct {
 	medicineRepo       repo.MedicineRepo
 	patientRepo        repo.PatientRepo
 	signaRepo          repo.SignaRepo
-	midtransClient     *midtrans.SnapClient
+	midtransRepo       repo.MidtransRepo
+	xenditRepo         repo.XenditRepo
 }
 
 // New - creates a new Transaction use case.
-func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.MedicineRepo, pRepo repo.PatientRepo, sRepo repo.SignaRepo, mtClient *midtrans.SnapClient) *UseCase {
+func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.MedicineRepo, pRepo repo.PatientRepo, sRepo repo.SignaRepo, mtRepo repo.MidtransRepo, xRepo repo.XenditRepo) *UseCase {
 	return &UseCase{
 		repo:               r,
 		medicineDetailRepo: mdRepo,
 		medicineRepo:       mRepo,
 		patientRepo:        pRepo,
 		signaRepo:          sRepo,
-		midtransClient:     mtClient,
+		midtransRepo:       mtRepo,
+		xenditRepo:         xRepo,
 	}
 }
 
@@ -45,13 +46,13 @@ func (uc *UseCase) CreateWithMedicineDetail(
 		return nil, fmt.Errorf("all input arrays must have the same length")
 	}
 
-	// 1. Validate patient
+	// Validate patient
 	patient, err := uc.patientRepo.GetByID(ctx, t.PatientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find patient: %w", err)
 	}
 
-	// 2. Validate all medicines and signas first
+	// Validate all medicines and signas first
 	var medicineDetails []entity.MedicineDetail
 	totalPrice := int64(0)
 
@@ -81,7 +82,7 @@ func (uc *UseCase) CreateWithMedicineDetail(
 		totalPrice += quantities[idx] * medicine.Price
 	}
 
-	// 3. Create transaction (safe to create now)
+	// Create transaction (safe to create now)
 	t.TotalPrice = totalPrice
 	t.TotalMedicines = int64(len(medicines))
 	transaction, err := uc.repo.Create(ctx, t)
@@ -89,7 +90,7 @@ func (uc *UseCase) CreateWithMedicineDetail(
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
 	}
 
-	// 4. Create medicine details and update stock
+	// Create medicine details and update stock
 	for _, detail := range medicineDetails {
 		detail.TransactionID = transaction.ID
 
@@ -105,22 +106,28 @@ func (uc *UseCase) CreateWithMedicineDetail(
 		}
 	}
 
-	// 5. Create snap transaction
-	snapResp, _ := uc.midtransClient.CreateSnapTransaction(transaction.ID, totalPrice, patient.Name)
-	if snapResp == nil {
-		return nil, fmt.Errorf("failed to create snap transaction")
+	// Create snap transaction (unavailable, since notification url cannot be set on midtrans dashboard)
+	_, _, _ = uc.midtransRepo.CreateSnapTransaction(transaction.ID, totalPrice, patient.Name)
+	// if transaction.PaymentRedirectURL == "" {
+	// 	return nil, fmt.Errorf("failed to create snap transaction")
+	// }
+
+	// Create Xendit invoice
+	paymentURL, err := uc.xenditRepo.CreateInvoiceTransaction(ctx, transaction.ID, totalPrice)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Xendit invoice: %w", err)
 	}
 
-	transaction.PaymentToken = snapResp.Token
-	transaction.PaymentRedirectURL = snapResp.RedirectURL
+	transaction.PaymentProvider = "xendit"
+	transaction.PaymentRedirectURL = paymentURL
 
-	// 6. Save payment token
+	// Update transaction with payment redirect URL
 	transaction, err = uc.repo.Update(ctx, transaction.ID, *transaction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update transaction with snap info: %w", err)
 	}
 
-	// 7. Fetch details and return
+	// Fetch details and return
 	details, err := uc.medicineDetailRepo.GetByTransactionID(ctx, transaction.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get medicine details: %w", err)
@@ -227,7 +234,7 @@ func (uc *UseCase) attachMedicineDetails(ctx context.Context, transactions []ent
 }
 
 // HandleMidtransNotification - handles Midtrans notification callback.
-func (uc *UseCase) HandleMidtransNotification(ctx context.Context, transactionID, transactionStatus, fraudStatus string) error {
+func (uc *UseCase) HandleMidtransNotification(ctx context.Context, transactionID, transactionStatus, fraudStatus string) (*entity.Transaction, error) {
 	// You can map status to your internal status system
 	var internalStatus string
 	switch transactionStatus {
@@ -246,5 +253,34 @@ func (uc *UseCase) HandleMidtransNotification(ctx context.Context, transactionID
 	}
 
 	// Update the transaction status in your database
-	return uc.repo.UpdateStatusByTransactionID(ctx, transactionID, internalStatus)
+	transaction, err := uc.repo.UpdateStatusByTransactionID(ctx, transactionID, internalStatus)
+	if err != nil {
+		return nil, fmt.Errorf("TransactionUseCase - HandleMidtransNotification - UpdateStatusByTransactionID: %w", err)
+	}
+
+	return transaction, nil
+}
+
+// HandleXenditNotification - handles Xendit notification callback.
+func (uc *UseCase) HandleXenditNotification(ctx context.Context, transactionID, status string) (*entity.Transaction, error) {
+	// You can map status to your internal status system
+	var internalStatus string
+	switch status {
+	case "PAID":
+		internalStatus = "paid"
+	case "EXPIRED", "FAILED":
+		internalStatus = "failed"
+	case "PENDING":
+		internalStatus = "pending"
+	default:
+		return nil, fmt.Errorf("unknown Xendit status: %s", status)
+	}
+
+	// Update the transaction status in your database
+	transaction, err := uc.repo.UpdateStatusByTransactionID(ctx, transactionID, internalStatus)
+	if err != nil {
+		return nil, fmt.Errorf("TransactionUseCase - HandleMidtransNotification - UpdateStatusByTransactionID: %w", err)
+	}
+
+	return transaction, nil
 }

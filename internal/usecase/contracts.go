@@ -45,7 +45,8 @@ type (
 		GetByID(context.Context, string) (*entity.Transaction, error)
 		Update(context.Context, string, entity.Transaction) (*entity.Transaction, error)
 		Delete(context.Context, string) error
-		HandleMidtransNotification(context.Context, string, string, string) error
+		HandleMidtransNotification(context.Context, string, string, string) (*entity.Transaction, error)
+		HandleXenditNotification(context.Context, string, string) (*entity.Transaction, error)
 	}
 
 	// MedicineDetail -.
