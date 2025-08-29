@@ -67,4 +67,14 @@ type (
 	XenditRepo interface {
 		CreateInvoiceTransaction(ctx context.Context, transactionID string, amount int64) (string, error)
 	}
+
+	// AuditRepo -.
+	AuditRepo interface {
+		Create(context.Context, entity.AuditLog) (*entity.AuditLog, error)
+		GetAll(context.Context) ([]entity.AuditLog, error)
+	}
+
+	RMQRepo interface {
+		PublishEvent(ctx context.Context, handler string, payload interface{}) error
+	}
 )

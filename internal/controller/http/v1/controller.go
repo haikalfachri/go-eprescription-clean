@@ -4,7 +4,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go-eprescription-clean/internal/usecase"
 	"go-eprescription-clean/pkg/logger"
-	"go-eprescription-clean/pkg/midtrans"
 )
 
 // V1 -.
@@ -14,7 +13,6 @@ type Usecases struct {
 	Medicine       usecase.Medicine
 	Transaction    usecase.Transaction
 	MedicineDetail usecase.MedicineDetail
-	Midtrans       *midtrans.SnapClient 
 	// ...
 }
 

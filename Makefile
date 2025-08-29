@@ -96,30 +96,57 @@ bin-deps: ### install tools
 pre-commit: swag-v1 proto-v1 mock format linter-golangci test ### run pre-commit
 .PHONY: pre-commit
 
-createdb: ### create database
+### =======================
+### POSTGRESQL
+### =======================
+
+pg-create-db: ### create database
 	@echo "Creating database $(DB_NAME)..."
 	PGPASSWORD=$(DB_PASSWORD) psql -U $(DB_USER) -h $(DB_HOST) -p $(DB_PORT) -c "CREATE DATABASE \"$(DB_NAME)\";"
 
-dropdb: ### drop database
+pg-drop-db: ### drop database
 	@echo "Dropping database $(DB_NAME)..."
 	PGPASSWORD=$(DB_PASSWORD) psql -U $(DB_USER) -h $(DB_HOST) -p $(DB_PORT) -c "DROP DATABASE IF EXISTS \"$(DB_NAME)\";"
-.PHONY: createdb dropdb
+.PHONY: pg-create-db pg-drop-db
 
-migrate-create:  ### create new migration
+pg-migrate-create:  ### create new migration
 	migrate create -ext sql -dir migrations '$(word 2,$(MAKECMDGOALS))'
-.PHONY: migrate-create
+.PHONY: pg-migrate-create
 
-migrate-up: ### migration up
+pg-migrate-up: ### migration up
 	migrate -path migrations -database '$(PG_URL)?sslmode=disable' up
-.PHONY: migrate-up
+.PHONY: pg-migrate-up
 
-migrate-down: ### migration down
+pg-migrate-down: ### migration down
 	migrate -path migrations -database '$(PG_URL)?sslmode=disable' down
-.PHONY: migrate-down
+.PHONY: pg-migrate-down
 
-seeddb: ### seed database
+pg-seed-db: ### seed database
 	@echo "Seeding database $(DB_NAME)..."
 	PGPASSWORD=$(DB_PASSWORD) psql -U $(DB_USER) -h $(DB_HOST) -p $(DB_PORT) -d $(DB_NAME) -f migrations/seed_data.sql
-.PHONY: seeddb
+.PHONY: pg-seed-db
 
 
+### =======================
+### MONGODB
+### =======================
+
+mg-create-db: ### create MongoDB database (via dummy insert)
+	@echo "Creating MongoDB database $(MG_DB_NAME)..."
+	mongosh $(MG_URL) --eval 'db.getSiblingDB("$(MG_DB_NAME)").dummy.insertOne({createdAt: new Date()})'
+
+mg-drop-db: ### drop MongoDB database
+	@echo "Dropping MongoDB database $(MG_DB_NAME)..."
+	mongosh $(MG_URL) --eval 'db.getSiblingDB("$(MG_DB_NAME)").dropDatabase()'
+
+mg-drop-collection: ### drop MongoDB collection
+	@echo "Dropping collection $(MG_COLLECTION) in $(MG_DB_NAME)..."
+	mongosh $(MG_URL)/$(MG_DB_NAME) --eval 'db.getCollection("$(MG_COLLECTION)").drop()'
+
+mg-show-dbs: ### list all MongoDB databases
+	mongosh $(MG_URL) --eval 'show dbs'
+
+mg-show-collections: ### list collections in MongoDB database
+	mongosh $(MG_URL)/$(MG_DB_NAME) --eval 'show collections'
+
+.PHONY: mg-create-db mg-drop-db mg-drop-collection mg-show-dbs mg-show-collections

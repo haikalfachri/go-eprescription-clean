@@ -13,8 +13,14 @@ type SnapClient struct {
 
 // New returns a ready-to-use SnapClient
 func New() *SnapClient {
-	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY") // or from config
-	midtrans.Environment = midtrans.Sandbox // or midtrans.Production
+	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
+	env := os.Getenv("MIDTRANS_ENVIRONMENT")
+	switch env {
+	case "production":
+		midtrans.Environment = midtrans.Production
+	default:
+		midtrans.Environment = midtrans.Sandbox
+	}
 
 	client := snap.Client{}
 	client.New(midtrans.ServerKey, midtrans.Sandbox)

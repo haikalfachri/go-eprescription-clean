@@ -8,21 +8,30 @@ import (
 	"syscall"
 
 	"go-eprescription-clean/config"
+	"go-eprescription-clean/internal/controller/grpc"
+	grpcV1 "go-eprescription-clean/internal/controller/grpc/v1"
 	"go-eprescription-clean/internal/controller/http"
-	v1 "go-eprescription-clean/internal/controller/http/v1"
+	httpV1 "go-eprescription-clean/internal/controller/http/v1"
+
+	"go-eprescription-clean/internal/repo/message_broker"
 	"go-eprescription-clean/internal/repo/payment_gateway"
 	"go-eprescription-clean/internal/repo/persistent"
+	"go-eprescription-clean/internal/usecase/audit"
 	"go-eprescription-clean/internal/usecase/medicine"
 	"go-eprescription-clean/internal/usecase/medicine_detail"
 	"go-eprescription-clean/internal/usecase/patient"
 	"go-eprescription-clean/internal/usecase/signa"
 	"go-eprescription-clean/internal/usecase/transaction"
 
+	"go-eprescription-clean/pkg/grpcserver"
 	"go-eprescription-clean/pkg/httpserver"
 	"go-eprescription-clean/pkg/logger"
 	"go-eprescription-clean/pkg/midtrans"
-	"go-eprescription-clean/pkg/xendit"
+	"go-eprescription-clean/pkg/mongodb"
 	"go-eprescription-clean/pkg/postgres"
+	"go-eprescription-clean/pkg/rabbitmq/client"
+	"go-eprescription-clean/pkg/rabbitmq/server"
+	"go-eprescription-clean/pkg/xendit"
 )
 
 // Run creates objects via constructors.
@@ -36,40 +45,76 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Close()
 
+	mg, err := mongodb.New(cfg.MG.URL, mongodb.MaxPoolSize(cfg.MG.PoolMax))
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - mongodb.New: %w", err))
+	}
+	defer mg.Close()
+
+	auditUseCase := audit.New(persistent.NewAuditRepo(mg))
+
+	// RabbitMQ Client (Publisher)
+	rmqClient, err := client.New(
+		cfg.RMQ.URL,
+		cfg.RMQ.ServerExchange, // server exchange name
+		cfg.RMQ.ClientExchange, // client exchange name (unique per service)
+	)
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - rmqClient - client.New: %w", err))
+	}
+	defer rmqClient.Shutdown()
+
 	// Midtrans
 	mtClient := midtrans.New()
 
 	// Xendit
 	xenditClient := xendit.New()
-	
+
 	// Use-Case
 	signaUseCase := signa.New(persistent.NewSignaRepo(pg))
 	patientUseCase := patient.New(persistent.NewPatientRepo(pg))
 	medicineUseCase := medicine.New(persistent.NewMedicineRepo(pg))
 	transactionUseCase := transaction.New(
-		persistent.NewTransactionRepo(pg), 
-		persistent.NewMedicineDetailsRepo(pg), 
+		persistent.NewTransactionRepo(pg),
+		persistent.NewMedicineDetailsRepo(pg),
 		persistent.NewMedicineRepo(pg),
 		persistent.NewPatientRepo(pg),
 		persistent.NewSignaRepo(pg),
 		payment_gateway.NewMidtransRepo(mtClient),
 		payment_gateway.NewXenditRepo(xenditClient),
+		message_broker.NewRMQRepo(rmqClient),
 	)
 	medicineDetailUseCase := medicine_detail.New(persistent.NewMedicineDetailsRepo(pg))
 
-	usecases := v1.Usecases{
-		Signa: signaUseCase,
-		Patient: patientUseCase,
-		Medicine: medicineUseCase,
-		Transaction: transactionUseCase,
+	httpV1Usecases := httpV1.Usecases{
+		Signa:          signaUseCase,
+		Patient:        patientUseCase,
+		Medicine:       medicineUseCase,
+		Transaction:    transactionUseCase,
 		MedicineDetail: medicineDetailUseCase,
 	}
 
+	grpcV1Usecases := grpcV1.Usecases{
+		Audit: auditUseCase,
+	}
+
+	// gRPC Server
+	grpcServer := grpcserver.New(grpcserver.Port(cfg.GRPC.Port))
+	rmqRouter := grpc.NewRouter(grpcServer.App, grpcV1Usecases, l)
+
 	// HTTP Server
 	httpServer := httpserver.New(httpserver.Port(cfg.HTTP.Port), httpserver.Prefork(cfg.HTTP.UsePreforkMode))
-	http.NewRouter(httpServer.App, cfg, usecases, l)
+	http.NewRouter(httpServer.App, cfg, httpV1Usecases, l)
+
+	// Rmq
+	rmqServer, err := server.New(cfg.RMQ.URL, cfg.RMQ.ServerExchange, rmqRouter, l)
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - rmqServer - server.New: %w", err))
+	}
 
 	// Start servers
+	rmqServer.Start()
+	grpcServer.Start()
 	httpServer.Start()
 
 	// Waiting signal

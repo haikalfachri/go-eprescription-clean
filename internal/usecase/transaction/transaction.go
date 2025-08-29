@@ -18,10 +18,20 @@ type UseCase struct {
 	signaRepo          repo.SignaRepo
 	midtransRepo       repo.MidtransRepo
 	xenditRepo         repo.XenditRepo
+	rmqRepo            repo.RMQRepo
 }
 
 // New - creates a new Transaction use case.
-func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.MedicineRepo, pRepo repo.PatientRepo, sRepo repo.SignaRepo, mtRepo repo.MidtransRepo, xRepo repo.XenditRepo) *UseCase {
+func New(
+	r repo.TransactionRepo,
+	mdRepo repo.MedicineDetailRepo,
+	mRepo repo.MedicineRepo,
+	pRepo repo.PatientRepo,
+	sRepo repo.SignaRepo,
+	mtRepo repo.MidtransRepo,
+	xRepo repo.XenditRepo,
+	rmqRepo repo.RMQRepo,
+) *UseCase {
 	return &UseCase{
 		repo:               r,
 		medicineDetailRepo: mdRepo,
@@ -30,6 +40,7 @@ func New(r repo.TransactionRepo, mdRepo repo.MedicineDetailRepo, mRepo repo.Medi
 		signaRepo:          sRepo,
 		midtransRepo:       mtRepo,
 		xenditRepo:         xRepo,
+		rmqRepo:            rmqRepo,
 	}
 }
 
@@ -133,6 +144,17 @@ func (uc *UseCase) CreateWithMedicineDetail(
 		return nil, fmt.Errorf("failed to get medicine details: %w", err)
 	}
 	transaction.MedicineDetail = details
+
+	// Publish transaction created event
+	var auditLog entity.AuditLog
+
+	auditLog.Event = "transaction-created"
+	auditLog.Payload = transaction
+
+	err = uc.rmqRepo.PublishEvent(ctx, "transaction.event", auditLog)
+	if err != nil {
+		return nil, fmt.Errorf("failed to publish transaction event: %w", err)
+	}
 
 	return transaction, nil
 }
@@ -280,6 +302,17 @@ func (uc *UseCase) HandleXenditNotification(ctx context.Context, transactionID, 
 	transaction, err := uc.repo.UpdateStatusByTransactionID(ctx, transactionID, internalStatus)
 	if err != nil {
 		return nil, fmt.Errorf("TransactionUseCase - HandleMidtransNotification - UpdateStatusByTransactionID: %w", err)
+	}
+
+	// Publish transaction updated event
+	var auditLog entity.AuditLog
+
+	auditLog.Event = "transaction-updated"
+	auditLog.Payload = transaction
+
+	err = uc.rmqRepo.PublishEvent(ctx, "transaction.event", auditLog)
+	if err != nil {
+		return nil, fmt.Errorf("failed to publish transaction event: %w", err)
 	}
 
 	return transaction, nil

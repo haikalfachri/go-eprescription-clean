@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package grpc.v1;
+
+option go_package = "docs/proto/v1";
+
+// The message that represents an audit log entry
+message AuditLog {
+  string id = 1;            // unique id (MongoDB ObjectId, can be string)
+  string event = 2;         // e.g., "TransactionPaid", "PrescriptionCreated"
+  string timestamp = 3;     // ISO8601 or RFC3339 string
+  string payload = 4;       // raw JSON payload (string for flexibility)
+}
+
+// Request to fetch logs by user
+message GetLogRequest {
+  string user_id = 1;
+}
+
+// Generic response containing a list of logs
+message GetLogResponse {
+  repeated AuditLog logs = 1;
+}
+
+// gRPC service definition
+service AuditService {
+  // Get all logs
+  rpc GetAllAuditLogs (GetLogRequest) returns (GetLogResponse);
+}

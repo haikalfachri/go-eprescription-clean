@@ -3,20 +3,22 @@ package config
 import (
 	"fmt"
 
-	"github.com/joho/godotenv"
 	"github.com/caarlos0/env/v11"
-	
+	"github.com/joho/godotenv"
 )
 
 type (
 	// Config -.
 	Config struct {
-		App     App
-		HTTP    HTTP
-		Log     Log
-		PG      PG
-		Metrics Metrics
-		Swagger Swagger
+		App      App
+		HTTP     HTTP
+		GRPC     GRPC
+		Log      Log
+		PG       PG
+		MG       MG
+		Metrics  Metrics
+		RMQ      RMQ
+		Swagger  Swagger
 		Midtrans Midtrans
 	}
 
@@ -32,6 +34,11 @@ type (
 		UsePreforkMode bool   `env:"HTTP_USE_PREFORK_MODE" envDefault:"false"`
 	}
 
+	// GRPC -.
+	GRPC struct {
+		Port string `env:"GRPC_PORT,required"`
+	}
+
 	// Log -.
 	Log struct {
 		Level string `env:"LOG_LEVEL,required"`
@@ -43,9 +50,22 @@ type (
 		URL     string `env:"PG_URL,required"`
 	}
 
+	// MG -.
+	MG struct {
+		PoolMax int    `env:"PG_POOL_MAX,required"`
+		URL     string `env:"MG_URL,required"`
+	}
+
 	// Metrics -.
 	Metrics struct {
 		Enabled bool `env:"METRICS_ENABLED" envDefault:"true"`
+	}
+
+	// RMQ -.
+	RMQ struct {
+		ServerExchange string `env:"RMQ_SERVER,required"`
+		ClientExchange string `env:"RMQ_CLIENT,required"`
+		URL            string `env:"RMQ_URL,required"`
 	}
 
 	// Swagger -.
@@ -66,7 +86,7 @@ func NewConfig() (*Config, error) {
 		// Not a fatal error if you want to allow system env as fallback
 		fmt.Println("Warning: .env file not found or couldn't be loaded")
 	}
-	
+
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("config error: %w", err)

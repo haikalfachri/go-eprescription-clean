@@ -58,4 +58,10 @@ type (
 		Update(context.Context, string, entity.MedicineDetail) (*entity.MedicineDetail, error)
 		Delete(context.Context, string) error	
 	}
+
+	// Audit -.
+	Audit interface {
+		StoreEvent(context.Context, []byte) error
+		GetAll(context.Context) ([]entity.AuditLog, error)
+	}
 )
